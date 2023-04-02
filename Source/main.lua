@@ -16,7 +16,7 @@ camera.far = 50
 camera.depth = camera.far - camera.near
 camera.fov_half = math.rad(35)
 camera.scale = 2
-camera.x_scale = math.rad(45) / camera.fov_half
+camera.x_scale = math.rad(45)/camera.fov_half
 camera.map_size = 1024
 camera.screen_width = 400
 camera.screen_height = 240
@@ -59,24 +59,27 @@ function playdate.update()
     --setTransform(camera)
     
     -- update Frustum corner points
-    camera.farX1 = camera.worldX + math.cos(camera.direction - camera.fov_half) * camera.far * camera.scale
-    camera.farY1 = camera.worldY + math.sin(camera.direction - camera.fov_half) * camera.far * camera.scale
+    local leftX = math.cos(camera.direction - camera.fov_half)
+    local leftY = math.sin(camera.direction - camera.fov_half)
+    local rightX = math.cos(camera.direction + camera.fov_half)
+    local rightY = math.sin(camera.direction + camera.fov_half)
     
-    camera.nearX1 = camera.worldX + math.cos(camera.direction - camera.fov_half) * camera.near * camera.scale
-    camera.nearY1 = camera.worldY + math.sin(camera.direction - camera.fov_half) * camera.near * camera.scale
-    
-    camera.farX2 = camera.worldX + math.cos(camera.direction + camera.fov_half) * camera.far * camera.scale
-    camera.farY2 = camera.worldY + math.sin(camera.direction + camera.fov_half) * camera.far * camera.scale
-    
-    camera.nearX2 = camera.worldX + math.cos(camera.direction + camera.fov_half) * camera.near * camera.scale
-    camera.nearY2 = camera.worldY + math.sin(camera.direction + camera.fov_half) * camera.near * camera.scale
+    camera.farX1 = camera.worldX + leftX * camera.far * camera.scale
+    camera.farY1 = camera.worldY + leftY * camera.far * camera.scale
+    camera.nearX1 = camera.worldX + leftX * camera.near * camera.scale
+    camera.nearY1 = camera.worldY + leftY * camera.near * camera.scale
+    camera.farX2 = camera.worldX + rightX * camera.far * camera.scale
+    camera.farY2 = camera.worldY + rightY * camera.far * camera.scale
+    camera.nearX2 = camera.worldX + rightX * camera.near * camera.scale
+    camera.nearY2 = camera.worldY + rightY * camera.near * camera.scale
 
     -- update sin & cos of current direction (these are frequently accessed, so calc once and re-use)
     camera.sin_dir = math.sin(camera.direction)
     camera.cos_dir = math.cos(camera.direction)
     
     -- update camera frustum polygon
-    local frustum = geom.polygon.new(camera.farX1, camera.farY1, camera.farX2, camera.farY2, camera.nearX2, camera.nearY2, camera.nearX1, camera.nearY1)
+    local frustum = geom.polygon.new(camera.farX1, camera.farY1, camera.farX2, camera.farY2, 
+        camera.nearX2, camera.nearY2, camera.nearX1, camera.nearY1)
     frustum:close()
     
     gfx.clear()
@@ -147,8 +150,8 @@ function projectedPoint(camera, x, y, projection)
     
     -- Project to screen coordinates
     local distance = space_y - camera.near
-    local depth = ((distance)/camera.depth) * camera.scale
-    local screen_x = 200 - ((space_x * 1)/distance) * 200 * camera.x_scale
+    local depth = (distance/camera.depth) * camera.scale
+    local screen_x = 200 - (space_x / distance) * 200 * camera.x_scale
     local screen_y = 1/depth * 240
     
     local scale = 1/depth
