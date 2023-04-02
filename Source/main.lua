@@ -14,7 +14,7 @@ camera.direction = math.rad(0)
 camera.near = 40
 camera.far = 200
 camera.depth = camera.far - camera.near
-camera.fov_half = math.rad(35)
+camera.fov_half = math.rad(45)
 --camera.scale = 2
 camera.x_scale = math.rad(45)/camera.fov_half
 camera.map_size = 1024
@@ -176,8 +176,8 @@ function projectedPoint(camera, x, y, projection)
     
     -- project to screen
     local distance = rotated_y - camera.near
-    local screen_x = 200 - (rotated_x / distance) * 200 * camera.x_scale
-    local screen_y = (rotated_y / distance) * 120 - 120
+    local screen_x = 200 - (rotated_x / distance) * 200 --* camera.x_scale
+    local screen_y = (rotated_y / distance) * 120 - 140
     local scale = 1/distance
     
     -- print("space x/y: " .. rotated_x .. "/" .. rotated_y)
