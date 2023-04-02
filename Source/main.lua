@@ -8,22 +8,22 @@ local ground_img = gfx.image.new("map.png")
 local input_vector = geom.vector2D.new(0, 0)
 
 local camera = {}
-camera.worldX = 0
-camera.worldY = 0
-camera.direction = .1
-camera.near = 10
-camera.far = 50
+camera.worldX = 200
+camera.worldY = 130
+camera.direction = math.rad(0)
+camera.near = 40
+camera.far = 200
 camera.depth = camera.far - camera.near
 camera.fov_half = math.rad(35)
-camera.scale = 2
+--camera.scale = 2
 camera.x_scale = math.rad(45)/camera.fov_half
 camera.map_size = 1024
 camera.screen_width = 400
 camera.screen_height = 240
-camera.dxx = math.sin(camera.direction)
-camera.dxy = math.cos(camera.direction)
-camera.dyx = -math.cos(camera.direction)
-camera.dyy = math.sin(camera.direction)
+-- camera.dxx = math.sin(camera.direction)
+-- camera.dxy = math.cos(camera.direction)
+-- camera.dyx = -math.cos(camera.direction)
+-- camera.dyy = math.sin(camera.direction)
 camera.sin_dir = math.sin(camera.direction)
 camera.cos_dir = math.cos(camera.direction)
 
@@ -64,14 +64,14 @@ function playdate.update()
     local rightX = math.cos(camera.direction + camera.fov_half)
     local rightY = math.sin(camera.direction + camera.fov_half)
     
-    camera.farX1 = camera.worldX + leftX * camera.far * camera.scale
-    camera.farY1 = camera.worldY + leftY * camera.far * camera.scale
-    camera.nearX1 = camera.worldX + leftX * camera.near * camera.scale
-    camera.nearY1 = camera.worldY + leftY * camera.near * camera.scale
-    camera.farX2 = camera.worldX + rightX * camera.far * camera.scale
-    camera.farY2 = camera.worldY + rightY * camera.far * camera.scale
-    camera.nearX2 = camera.worldX + rightX * camera.near * camera.scale
-    camera.nearY2 = camera.worldY + rightY * camera.near * camera.scale
+    camera.farX1 = camera.worldX + leftX * camera.far 
+    camera.farY1 = camera.worldY + leftY * camera.far 
+    camera.nearX1 = camera.worldX + leftX * camera.near 
+    camera.nearY1 = camera.worldY + leftY * camera.near 
+    camera.farX2 = camera.worldX + rightX * camera.far 
+    camera.farY2 = camera.worldY + rightY * camera.far 
+    camera.nearX2 = camera.worldX + rightX * camera.near 
+    camera.nearY2 = camera.worldY + rightY * camera.near 
 
     -- update sin & cos of current direction (these are frequently accessed, so calc once and re-use)
     camera.sin_dir = math.sin(camera.direction)
@@ -106,6 +106,32 @@ function playdate.update()
     elseif state == 2 then
         -- DRAW CAMERA VIEW
         
+        -- draw camera
+        gfx.drawCircleAtPoint(200, 240, 3)
+        -- draw frustum
+        
+        local leftX = math.cos(math.rad(-90) - camera.fov_half)
+        local leftY = math.sin(math.rad(-90) - camera.fov_half)
+        local rightX = math.cos(math.rad(-90) + camera.fov_half)
+        local rightY = math.sin(math.rad(-90) + camera.fov_half)
+        local farX1 = 200 + leftX * camera.far 
+        local farY1 = 240 + leftY * camera.far 
+        local nearX1 = 200 + leftX * camera.near 
+        local nearY1 = 240 + leftY * camera.near 
+        local farX2 = 200 + rightX * camera.far 
+        local farY2 = 240 + rightY * camera.far 
+        local nearX2 = 200 + rightX * camera.near 
+        local nearY2 = 240 + rightY * camera.near 
+        local rot_frustum = geom.polygon.new(
+            farX1, farY1, 
+            farX2, farY2,
+            nearX2, nearY2,
+            nearX1, nearY1
+            )
+        rot_frustum:close()
+        
+        gfx.drawPolygon(rot_frustum)
+        
         -- draw sprites
         for sprite = 1, #sprites do
             local sprX, sprY = sprites[sprite].x, sprites[sprite].y
@@ -123,7 +149,7 @@ function playdate.update()
             local sprX, sprY = sprites[sprite].x, sprites[sprite].y
             if frustum:containsPoint(sprX, sprY) then
                 local x, y, scale = projectedPoint(camera, sprX, sprY, "screen")
-                gfx.drawRect(x, y, 20 * scale, 40 * scale)
+                gfx.drawRect(x, y, 500 * scale, 1000 * scale)
             end
         end
     gfx.drawText('SCREEN COORDINATES', 225, 220)
@@ -140,24 +166,26 @@ end
 
 function projectedPoint(camera, x, y, projection)
     
-    -- Get the x,y position relative to the camera
-    local obj_x = x - camera.worldX
-    local obj_y = y - camera.worldY
+    -- find point position relative to camera
+    local camera_x = (x - camera.worldX)
+    local camera_y = (y - camera.worldY)
     
-    -- Rotate by the camera angle
-    local space_x = (obj_x * camera.sin_dir) - (obj_y * camera.cos_dir) 
-    local space_y = (obj_x * camera.cos_dir) + (obj_y * camera.sin_dir) 
+    -- rotate to camera direction
+    local rotated_x = (camera_x * camera.sin_dir - camera_y * camera.cos_dir)
+    local rotated_y = (camera_x * camera.cos_dir + camera_y * camera.sin_dir)
     
-    -- Project to screen coordinates
-    local distance = space_y - camera.near
-    local depth = (distance/camera.depth) * camera.scale
-    local screen_x = 200 - (space_x / distance) * 200 * camera.x_scale
-    local screen_y = 1/depth * 240
+    -- project to screen
+    local distance = rotated_y - camera.near
+    local screen_x = 200 - (rotated_x / distance) * 200 * camera.x_scale
+    local screen_y = (rotated_y / distance) * 120 - 120
+    local scale = 1/distance
     
-    local scale = 1/depth
+    -- print("space x/y: " .. rotated_x .. "/" .. rotated_y)
+    -- print("screen x/y: " .. screen_x .. "/" .. screen_y)
+    -- print("scale: " .. scale)
     
     if projection == "camera" then
-        return 200 - space_x, 240 - space_y
+        return 200 - rotated_x, 240 - rotated_y
     elseif projection == "screen" then
         return screen_x, screen_y, scale
     end
@@ -189,5 +217,8 @@ function playdate.BButtonDown() bDown = true end
 function playdate.BButtonHeld() bHeld = true end
 function playdate.BButtonUp() bDown = false bHeld = false end
 function playdate.cranked(change, accel)
-    camera.scale += change/10
+    --camera.scale += change/10
+    camera.far += change
+    camera.near += change/4
+    camera.depth = camera.far - camera.near
 end
