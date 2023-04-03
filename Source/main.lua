@@ -14,12 +14,14 @@ camera.direction = math.rad(0)
 camera.near = 40
 camera.far = 200
 camera.depth = camera.far - camera.near
-camera.fov_half = math.rad(45)
+camera.fov_half = math.rad(35)
+camera.near = 1/math.tan(camera.fov_half) -- near plane position depends on desired fov
 --camera.scale = 2
 camera.x_scale = math.rad(45)/camera.fov_half
 camera.map_size = 1024
 camera.screen_width = 400
 camera.screen_height = 240
+camera.horizon = 60
 -- camera.dxx = math.sin(camera.direction)
 -- camera.dxy = math.cos(camera.direction)
 -- camera.dyx = -math.cos(camera.direction)
@@ -175,10 +177,11 @@ function projectedPoint(camera, x, y, projection)
     local rotated_y = (camera_x * camera.cos_dir + camera_y * camera.sin_dir)
     
     -- project to screen
-    local distance = rotated_y - camera.near
-    local screen_x = 200 - (rotated_x / distance) * 200 --* camera.x_scale
-    local screen_y = (rotated_y / distance) * 120 - 140
-    local scale = 1/distance
+    local screen_y = (camera.screen_height-camera.horizon) * camera.near/rotated_y + camera.horizon
+    local screen_x = camera.screen_width/2 - camera.near/rotated_y * rotated_x * camera.screen_width/2
+    
+    -- calculate scale for sprites
+    local scale = 1/rotated_y
     
     -- print("space x/y: " .. rotated_x .. "/" .. rotated_y)
     -- print("screen x/y: " .. screen_x .. "/" .. screen_y)
@@ -219,6 +222,6 @@ function playdate.BButtonUp() bDown = false bHeld = false end
 function playdate.cranked(change, accel)
     --camera.scale += change/10
     camera.far += change
-    camera.near += change/4
+    --camera.near += change/4
     camera.depth = camera.far - camera.near
 end
